@@ -1,0 +1,263 @@
+version: "3.9"
+
+services:
+  # API-Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    image: dms-api-gateway
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - GATEWAY_PORT=8000
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - EXPENSE_SERVICE_URL=${EXPENSE_SERVICE_URL}
+      - ANALYTICS_SERVICE_URL=${ANALYTICS_SERVICE_URL}
+      - NOTIFICATION_SERVICE_URL=${NOTIFICATION_SERVICE_URL}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      expense-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # auth-service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    image: dms-djauth
+    container_name: auth-service
+    ports:
+      - "8001:8001"
+    environment:
+      - AUTH_DB_NAME=${AUTH_DB_NAME}
+      - AUTH_DB_USER=${AUTH_DB_USER}
+      - AUTH_DB_PASSWORD=${AUTH_DB_PASSWORD}
+      - AUTH_DB_HOST=auth-db
+      - AUTH_DB_PORT=5432
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    volumes:
+      - ./services/auth-service:/app
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # expense service
+  expense-service:
+    build:
+      context: ./services/expense-service
+      dockerfile: Dockerfile
+    image: dms-expense
+    container_name: expense-service
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./services/expense-service:/app
+    environment:
+      - EXPENSE_DB_NAME=${EXPENSE_DB_NAME}
+      - EXPENSE_DB_USER=${EXPENSE_DB_USER}
+      - EXPENSE_DB_PASSWORD=${EXPENSE_DB_PASSWORD}
+      - EXPENSE_DB_HOST=expense-db
+      - EXPENSE_DB_PORT=5432
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+
+    depends_on:
+      expense-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # analytics service
+  analytics-service:
+    build:
+      context: ./services/analytics-service
+      dockerfile: Dockerfile
+    image: dms-analytics
+    container_name: analytics-service
+    ports:
+      - "8003:8003"
+    environment:
+      - ANALYTICS_DB_NAME=${ANALYTICS_DB_NAME}
+      - ANALYTICS_DB_USER=${ANALYTICS_DB_USER}
+      - ANALYTICS_DB_PASSWORD=${ANALYTICS_DB_PASSWORD}
+      - ANALYTICS_DB_HOST=analytics-db
+      - ANALYTICS_DB_PORT=5432
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - EXPENSE_SERVICE_URL=http://expense-service:8002
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # notification service
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8004:8004"
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_FROM=${SMTP_FROM}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # database for auth-service
+  auth-db:
+    image: postgres:16-alpine
+    container_name: auth-db
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${AUTH_DB_NAME}
+      - POSTGRES_USER=${AUTH_DB_USER}
+      - POSTGRES_PASSWORD=${AUTH_DB_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # database for expense-service
+  expense-db:
+    image: postgres:16-alpine
+    container_name: expense-db
+    environment:
+      POSTGRES_USER: ${EXPENSE_DB_USER}
+      POSTGRES_PASSWORD: ${EXPENSE_DB_PASSWORD}
+      POSTGRES_DB: ${EXPENSE_DB_NAME}
+    volumes:
+      - expense-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # database for analytics-service
+  analytics-db:
+    image: postgres:15-alpine
+    container_name: analytics-db
+    environment:
+      - POSTGRES_DB=${ANALYTICS_DB_NAME}
+      - POSTGRES_USER=${ANALYTICS_DB_USER}
+      - POSTGRES_PASSWORD=${ANALYTICS_DB_PASSWORD}
+    volumes:
+      - analytics-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${ANALYTICS_DB_USER} -d ${ANALYTICS_DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  expense-db-data:
+  analytics-db-data:
+  rabbitmq-data:
+  redis-data:

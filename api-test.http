@@ -1,0 +1,61 @@
+
+@baseUrl = http://localhost:8000
+@json = application/json
+
+@refresh=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc2NzY5MjUyOCwiaWF0IjoxNzY3NjA2MTI4LCJqdGkiOiIwYzEyODRkOWMzOGU0ZTNhYTFkNDk5ZTYwOTY2M2I0ZSIsInVzZXJfaWQiOiIyN2ViNDhiYi1hZGRmLTQzZWUtOTA5MS1mMDAwNGMxZWRiYzUiLCJlbWFpbCI6InRlc3QudXNlcjFAZXhhbXBsZS5jb20iLCJ1c2VybmFtZSI6InVzZXIxIn0.3rabnOQs7yIM5LBw498qiRnpMtVFE1gVKxy-EgnF6eM
+
+@access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY3NjA3OTI4LCJpYXQiOjE3Njc2MDYxMjgsImp0aSI6IjM1MGYzNTJkMGU3YTQwMmU5NWM1YjJhNjY4NzZiODYzIiwidXNlcl9pZCI6IjI3ZWI0OGJiLWFkZGYtNDNlZS05MDkxLWYwMDA0YzFlZGJjNSIsImVtYWlsIjoidGVzdC51c2VyMUBleGFtcGxlLmNvbSIsInVzZXJuYW1lIjoidXNlcjEifQ.FU-fjudhyb_IPTqZPSdHsRPNNRE-HqFeimJBOcL6UJU
+
+
+
+#### Auth API Test
+POST {{baseUrl}}/api/auth/register/ 
+Content-Type: {{json}}
+
+{
+    "email": "hailee.steinfeld@gmail.com",
+    "username": "katebishot_",
+    "name": "Hailee Steinfeld",
+    "password": "iamvengeance",
+    "password2": "iamvengeance"
+}
+
+### login user
+### Login User
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{json}}
+
+{
+    "email":  "test.user1@example.com",
+    "password": "iamvengeance"
+}
+
+
+
+### expense api
+POST {{baseUrl}}/api/expenses/categories
+Content-Type: application/json 
+Authorization: Bearer {{access_token}}
+
+{
+  "name": "Housing",
+  "description": "A expense category related to House Rent."
+}
+
+### create expense
+### create a new expense
+POST {{baseUrl}}/api/expenses
+Content-Type: application/json 
+Authorization: Bearer {{access_token}}
+
+{
+  "amount": 1200,
+  "category_id": 1,
+  "description": "Library Rent",
+  "date": null
+}
+
+### get expenses
+GET {{baseUrl}}/api/expenses
+Content-Type: application/json 
+Authorization: Bearer {{access_token}}
