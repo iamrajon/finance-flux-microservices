@@ -55,7 +55,7 @@ This application follows a microservices architecture with the following service
 
 3. **Start all services**
    ```bash
-   docker-compose up -d
+   docker-compose up -d --build
    ```
 
 4. **Access the services**
@@ -73,49 +73,6 @@ Once the services are running, access the interactive API documentation:
 - API Gateway: http://localhost:8000/docs
 - Expense Service: http://localhost:8002/docs
 - Notification Service: http://localhost:8004/docs
-
-## 🔧 Configuration
-
-### Email Notifications
-
-To enable email notifications, configure SMTP settings in your `.env` file. See [EMAIL_SETUP_GUIDE.md](EMAIL_SETUP_GUIDE.md) for detailed instructions.
-
-### Environment Variables
-
-Key environment variables (see `.env.example` for complete list):
-
-```env
-# JWT Secret
-JWT_SECRET_KEY=your-secret-key
-
-# RabbitMQ
-RABBITMQ_USER=guest
-RABBITMQ_PASSWORD=guest
-
-# Database credentials for each service
-AUTH_DB_NAME=auth_db
-EXPENSE_DB_NAME=expense_db
-ANALYTICS_DB_NAME=analytics_db
-```
-
-## 🧪 Testing
-
-Test the API endpoints using the provided `api-test.http` file with REST Client extension in VS Code, or use tools like Postman or curl.
-
-### Example: Register a User
-
-```bash
-POST http://localhost:8000/api/auth/register/
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "username": "testuser",
-  "name": "Test User",
-  "password": "SecurePass123!",
-  "password2": "SecurePass123!"
-}
-```
 
 ## 📊 Project Structure
 
@@ -187,8 +144,8 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 👤 Author
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
+- GitHub: [@rajon/github](https://github.com/iamrajon)
+- LinkedIn: [iamrajon/linkedin](www.linkedin.com/in/rajanc1209)
 
 ## 🙏 Acknowledgments
 
